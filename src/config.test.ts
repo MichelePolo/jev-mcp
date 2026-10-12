@@ -1,4 +1,4 @@
-import { loadConfig, normalizeBaseUrl } from './config.js';
+import { configWarnings, loadConfig, normalizeBaseUrl } from './config.js';
 
 describe('normalizeBaseUrl', () => {
   it.each([
@@ -10,6 +10,31 @@ describe('normalizeBaseUrl', () => {
     ['https://gateway.example.com/jev', 'https://gateway.example.com/jev'],
   ])('%s → %s', (raw, expected) => {
     expect(normalizeBaseUrl(raw)).toBe(expected);
+  });
+});
+
+describe('credentials in the base URL', () => {
+  it.each(['https://user:s3cret@gateway.example.com', 'user:s3cret@gpu-box:11434'])('rejects %s without echoing the secret', (raw) => {
+    expect(() => normalizeBaseUrl(raw)).toThrow(/must not contain credentials/);
+    expect(() => normalizeBaseUrl(raw)).not.toThrow(/s3cret/);
+  });
+});
+
+describe('configWarnings', () => {
+  const base = loadConfig({});
+
+  it('warns when an API key would travel over cleartext to a remote host', () => {
+    expect(configWarnings({ ...base, apiKey: 'k', baseUrl: 'http://gpu-box:11434' })).toEqual([
+      expect.stringMatching(/cleartext to gpu-box:11434/),
+    ]);
+  });
+
+  it.each([
+    ['https remote', { apiKey: 'k', baseUrl: 'https://gateway.example.com' }],
+    ['http loopback', { apiKey: 'k', baseUrl: 'http://127.0.0.1:11434' }],
+    ['no key', { baseUrl: 'http://gpu-box:11434' }],
+  ])('stays quiet for %s', (_label, overrides) => {
+    expect(configWarnings({ ...base, ...overrides })).toEqual([]);
   });
 });
 
