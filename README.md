@@ -22,7 +22,7 @@ All tools are read-only and take `texts` (1–100 strings, each judged independe
 | `yes_no` | `question`, optional `criteria: { true, false }` | `probability_yes` in [0, 1] |
 | `score` | `instructions`, `levels` (2–26, lowest → highest) | see [Score output](#score-output) |
 
-Results come back in input order, as `{ model, results: [{ index, … }], usage }`. A failing text returns `{ index, error }` without failing the batch; the call is flagged `isError` only when every text fails.
+Results come back in input order, as `{ model, results: [{ index, … }], usage }`. Probabilities and confidences are rounded to 4 decimals, scores to 3. A failing text returns `{ index, error }` without failing the batch; the call is flagged `isError` only when every text fails.
 
 ## Setup
 

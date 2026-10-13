@@ -25,6 +25,21 @@ const optionKey = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, 'Option names must b
 
 const READ_ONLY = { readOnlyHint: true, idempotentHint: true, openWorldHint: false } as const;
 
+/**
+ * Ollama returns probabilities with ~16 decimals, which costs tokens on every text
+ * for no decision value. 4 decimals keeps "very unlikely" (0.0003) distinct from 0.
+ */
+const PRECISION = 4;
+
+export function round(value: number, digits = PRECISION): number {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
+function roundAll(probabilities: Record<string, number>): Record<string, number> {
+  return Object.fromEntries(Object.entries(probabilities).map(([key, p]) => [key, round(p)]));
+}
+
 type ItemResult = { index: number } & Record<string, unknown>;
 
 /**
@@ -77,9 +92,9 @@ export function toScoreResult(answer: ScoreAnswer, levels: string[]): Record<str
     // The nearest level is what a caller usually acts on; score/max and confidence
     // keep the uncertainty visible (a 1.5 on a 0–2 scale is not a confident "Soon").
     level: levels[Math.round(score)],
-    score: Math.round(score * 1000) / 1000,
+    score: round(score, 3),
     max,
-    confidence: answer.confidence,
+    confidence: round(answer.confidence),
   };
 }
 
@@ -107,7 +122,7 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
         deps,
         args,
         { type: 'choice', instructions: args.instructions, criteria: args.options },
-        (a) => ({ choice: a.choice, confidence: a.confidence, probabilities: a.probabilities }),
+        (a) => ({ choice: a.choice, confidence: round(a.confidence), probabilities: roundAll(a.probabilities) }),
       ),
   );
 
@@ -138,7 +153,7 @@ export function registerTools(server: McpServer, deps: ToolDeps): void {
           instructions: args.question,
           ...(args.criteria ? { criteria: { false: args.criteria.false, true: args.criteria.true } } : {}),
         },
-        (a) => ({ probability_yes: a.noul }),
+        (a) => ({ probability_yes: round(a.noul) }),
       ),
   );
 

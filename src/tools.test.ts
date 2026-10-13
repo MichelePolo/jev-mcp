@@ -2,7 +2,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { Config } from './config.js';
 import { createServer } from './server.js';
-import { toScoreResult } from './tools.js';
+import { round, toScoreResult } from './tools.js';
 import type { SystemOneRequest } from './systemone.js';
 
 const config: Config = { baseUrl: 'http://ollama:11434', model: 'nimble', timeoutMs: 1000, concurrency: 2 };
@@ -133,5 +133,27 @@ describe('toScoreResult', () => {
   it('clamps out-of-range scores instead of returning an undefined level', () => {
     expect(toScoreResult(answer(2.0004), ['low', 'mid', 'high'])).toMatchObject({ level: 'high', score: 2 });
     expect(toScoreResult(answer(-0.01), ['low', 'high'])).toMatchObject({ level: 'low', score: 0 });
+  });
+});
+
+describe('rounding', () => {
+  it('rounds to 4 decimals by default, keeping tiny probabilities above zero', () => {
+    expect(round(0.998679063754783)).toBe(0.9987);
+    expect(round(0.00034729539093809663)).toBe(0.0003);
+    expect(round(1.97512, 3)).toBe(1.975);
+  });
+
+  it('applies to every probability and confidence the tools return', async () => {
+    const fetchImpl: typeof fetch = async () =>
+      Response.json({
+        model: 'nimble',
+        answers: {
+          q: { type: 'choice', choice: 'a', probabilities: { a: 0.998679063754783, b: 0.0013209362452 }, confidence: 0.990026491185159 },
+        },
+        usage: { input_tokens: 1, output_tokens: 1 },
+      });
+    const client = await connect(fetchImpl);
+    const { body } = await call(client, 'classify', { texts: ['x'], instructions: 'q', options: { a: 'A', b: 'B' } });
+    expect(body.results[0]).toEqual({ index: 0, choice: 'a', confidence: 0.99, probabilities: { a: 0.9987, b: 0.0013 } });
   });
 });
