@@ -79,6 +79,10 @@ claude mcp add jev -- node /absolute/path/to/jev-mcp/dist/index.js
 
 `/v1/systemone` returns `score` as the probability-weighted average of the zero-based levels. With levels `["Routine", "Soon", "Immediate"]`, `score` ∈ [0, 2], plus per-level `probabilities` and a `confidence`. jev-mcp returns the nearest `level` (what a caller usually acts on) together with the raw `score`, the scale `max` and the `confidence`, so the uncertainty stays visible: `1.5` on a 0–2 scale is not a confident "Soon". Per-level probabilities are dropped because their keys are the full level descriptions, which would cost tokens on every text.
 
+## Examples
+
+- [`examples/xauusd-backtest`](examples/xauusd-backtest/): measures how often the model's bullish/bearish call on a news headline anticipated the XAUUSD move 1, 4 and 24 hours later.
+
 ## Development
 
 ```bash
