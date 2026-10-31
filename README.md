@@ -90,3 +90,8 @@ npm run lint      # tsc --noEmit
 npm run test:run  # vitest
 npm run build     # emits dist/
 ```
+
+## Contributing
+
+The repo follows **gitflow**: work on `feature/<name>` branched from `develop` and open the PR against `develop`; releases go `develop` → `release/x.y.z` → `main` and are merged back into `develop`; urgent fixes use `hotfix/<name>` from `main`. Nothing is committed straight to `main`.
+
