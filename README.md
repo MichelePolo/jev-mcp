@@ -90,3 +90,7 @@ npm run lint      # tsc --noEmit
 npm run test:run  # vitest
 npm run build     # emits dist/
 ```
+
+## License
+
+[MIT](LICENSE) © 2026 Michele Polo
